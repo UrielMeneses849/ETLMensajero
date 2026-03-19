@@ -374,8 +374,13 @@ def _normalize_free_text(col: str, s: str, force_upper: bool = False) -> str:
 def _fix_clasico_observaciones_codes(s: str) -> str:
     if not isinstance(s, str):
         return s
-    return re.sub(r"\b([oOpP])([cCpP])(\d{2,})\b",
-                  lambda m: (m.group(1) + m.group(2)).upper() + m.group(3), s)
+
+    # Detect patterns like oc123, Oc123, pp123, etc. and normalize to uppercase prefix
+    return re.sub(
+        r"\b([a-zA-Z]{2})(\d{3,})\b",
+        lambda m: m.group(1).upper() + m.group(2),
+        s
+    )
 
 def _smart_text_format(v, col_name: str):
     if not isinstance(v, str):
@@ -895,6 +900,7 @@ def ETL_BIMSA(
 
         elif nk2 in ALIAS_OBSERV:
             df[col] = df[col].map(lambda x: _normalize_free_text("Observaciones", x, force_upper=False))
+            df[col] = df[col].map(_fix_clasico_observaciones_codes)
 
         elif nk2 in ALIAS_DESC_EXTRA:
             df[col] = df[col].map(lambda x: _normalize_free_text("Descripcion_Extra", x, force_upper=False))
