@@ -483,14 +483,6 @@ def _resolve_resource_path(filename: str) -> Optional[str]:
     return None
 
 
-def _drop_localizacion2(df: pd.DataFrame) -> pd.DataFrame:
-    def key(x: str) -> str:
-        return _norm_noaccents_lower(x).replace(" ", "_").replace("__", "_")
-    drop = [c for c in df.columns if key(c) in ("localizacion2", "localizacion_2")]
-    if drop:
-        df = df.drop(columns=drop)
-    return df
-
 # =========================================================
 # Estilos / formatos
 # =========================================================
@@ -821,9 +813,6 @@ def ETL_BIMSA(
          .replace("anio_", "año_")
     ) if isinstance(c, str) else c)
 
-    # Nunca Localizacion2
-    df = _drop_localizacion2(df)
-
     # ✅ FIX GLOBAL DE CARACTERES (a TODO texto)
     df = _repair_all_strings_df(df)
 
@@ -845,6 +834,7 @@ def ETL_BIMSA(
         "puesto_1",
         "puesto_2",
         "puesto_3",
+        "clave_tipo_obra",
     }
 
     # Precompute text columns once (avoids repeated dtype scanning)
@@ -957,54 +947,6 @@ def ETL_BIMSA(
 
     df_export.columns = _export_headers_with_spaces(df_export.columns)
 
-    # =========================================================
-    # RENOMBRE ESPECÍFICO: Inversion -> Inversion Pesos Mexicanos
-    # =========================================================
-
-    df_export = df_export.rename(columns=lambda c: (
-        "Inversion Pesos Mexicanos"
-        if _norm_noaccents_lower(str(c)) == "inversion"
-        else c
-    ))
-
-    # =========================================================
-    # ELIMINAR COLUMNAS DUPLICADAS (mismo nombre visible)
-    # =========================================================
-
-    # Detectar columnas duplicadas por nombre final (Excel view)
-    cols = list(df_export.columns)
-    seen = {}
-    cols_to_keep = []
-
-    for idx, col in enumerate(cols):
-        key = unicodedata.normalize("NFKD", col)
-        key = "".join(ch for ch in key if not unicodedata.combining(ch))
-        key = key.strip().lower()
-
-        if key not in seen:
-            seen[key] = [idx]
-            cols_to_keep.append(idx)
-        else:
-            seen[key].append(idx)
-
-    # Resolver duplicados: conservar la columna con más datos
-    final_indices = []
-
-    for key, indices in seen.items():
-        if len(indices) == 1:
-            final_indices.append(indices[0])
-        else:
-            # elegir la columna con más valores no nulos
-            best_idx = max(
-                indices,
-                key=lambda i: df_export.iloc[:, i].notna().sum()
-            )
-            final_indices.append(best_idx)
-
-    # reconstruir dataframe limpio
-    final_indices = sorted(final_indices)
-    df_export = df_export.iloc[:, final_indices]
-
     # OUTPUT
     if return_mode == "bytes":
         output = BytesIO()
@@ -1033,6 +975,7 @@ def ETL_BIMSA(
     for col_idx, col_name in enumerate(df_export.columns, start=1):
         ws.cell(row=header_row, column=col_idx, value=str(col_name) if col_name else "")
 
+
     # Insertar datos
     data_matrix = df_export.to_numpy()
 
@@ -1046,8 +989,21 @@ def ETL_BIMSA(
 
     # Aplicar anchos de columna
     widths = _compute_widths_from_df(df_export, padding=4, max_width=60)
+
+    MIN_HEADER_WIDTH = 18  # 👈 mínimo para evitar wrap en headers
+
     for idx, col_name in enumerate(df_export.columns, start=1):
-        ws.column_dimensions[get_column_letter(idx)].width = widths.get(col_name, 12)
+        header_len = len(str(col_name))
+
+        # ancho base calculado
+        base_width = widths.get(col_name, 12)
+
+        # asegurar que el header quepa en una línea
+        header_width = header_len + 4
+
+        final_width = max(base_width, header_width, MIN_HEADER_WIDTH)
+
+        ws.column_dimensions[get_column_letter(idx)].width = final_width
 
     _apply_width_overrides(ws, df_export)
 
@@ -1104,6 +1060,16 @@ def ETL_BIMSA(
 
         col_series = df[col_name]
         col_lower = str(col_name).lower()
+        if any(k in col_lower for k in ["latitud", "longitud", "latitude", "longitude", "lat", "lng"]):
+            for r in range(first_data_row, ws.max_row + 1):
+                cell = ws.cell(row=r, column=col_idx)
+                try:
+                    val = float(cell.value)
+                    cell.value = val
+                    cell.number_format = '0.00000'
+                except (TypeError, ValueError):
+                    pass
+            continue
 
         # --- DETECCIÓN DE FECHAS ---
         if "fecha" in col_lower or pd.api.types.is_datetime64_any_dtype(col_series):
