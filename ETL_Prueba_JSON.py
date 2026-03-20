@@ -828,6 +828,8 @@ def ETL_BIMSA(
         "tipo_desarrollo",
         "region",
         "estado_proyecto",
+        "Nombre_del_Proyecto",
+        "nombre_del_proyecto",
         "estado",
         "genero",
         "subgenero",
@@ -891,7 +893,11 @@ def ETL_BIMSA(
             df[col] = df[col].map(lambda x: _normalize_free_text("Proyecto", x, force_upper=True))
             continue
 
-        if nk2 in (ALIAS_NOMBRE_PROY | ALIAS_DESC_PROY | ALIAS_PROYECTO):
+        if nk2 in ALIAS_NOMBRE_PROY:
+            df[col] = df[col].map(lambda x: x.upper() if isinstance(x, str) else x)
+            continue
+
+        if nk2 in (ALIAS_DESC_PROY | ALIAS_PROYECTO):
             df[col] = df[col].map(lambda x: _normalize_free_text("Proyecto", x, force_upper=False))
             df[col] = df[col].map(_uppercase_inside_quotes)
 
@@ -946,7 +952,8 @@ def ETL_BIMSA(
                 "dia_publicado", "mes_publicado", "ano_publicado", "anio_publicado",
                 "dia_inicio", "mes_inicio", "ano_inicio", "anio_inicio"
             ):
-                df[col] = pd.to_numeric(df[col], errors="coerce").astype("Int64")
+                # Convertir a número entero REAL (no string)
+                df[col] = pd.to_numeric(df[col], errors="coerce")
 
 
     df_export = df.copy()
@@ -1076,6 +1083,20 @@ def ETL_BIMSA(
                 except (TypeError, ValueError):
                     pass
             continue
+
+        # --- FORZAR FORMATO NUMÉRICO PARA DIA/MES/AÑO ---
+        elif any(k in col_lower for k in [
+            "dia_publicado", "mes_publicado", "ano_publicado", "anio_publicado",
+            "dia_inicio", "mes_inicio", "ano_inicio", "anio_inicio"
+        ]):
+            for r in range(first_data_row, ws.max_row + 1):
+                cell = ws.cell(row=r, column=col_idx)
+                try:
+                    val = int(cell.value)
+                    cell.value = val
+                    cell.number_format = '0'
+                except (TypeError, ValueError):
+                    pass
 
         # --- DETECCIÓN DE FECHAS ---
         if "fecha" in col_lower or pd.api.types.is_datetime64_any_dtype(col_series):
