@@ -949,8 +949,8 @@ def ETL_BIMSA(
             if kk in ("latitud", "longitud", "latitude", "longitude", "lat", "lng"):
                 df[col] = pd.to_numeric(df[col], errors="coerce")
             if kk in (
-                "dia_publicado", "mes_publicado", "ano_publicado", "anio_publicado",
-                "dia_inicio", "mes_inicio", "ano_inicio", "anio_inicio"
+                "dia_publicado", "mes_publicado", "año_publicado", "Anio_publicado", "Mes_inicio", "Año_inicio"
+                "dia_inicio", "mes_inicio", "anio_inicio", "Anio_inicio", "Celular", "Extension", "Lada"
             ):
                 # Convertir a número entero REAL (no string)
                 df[col] = pd.to_numeric(df[col], errors="coerce")
