@@ -612,12 +612,14 @@ def _format_numeric_columns(ws, df_orig: pd.DataFrame, first_data_row: int):
             formats[i] = '#,##0'
         elif cname in ("latitud", "longitud", "latitude", "longitude", "lat", "lng"):
             formats[i] = '0.000000'
-        elif cname in ("dia_publicado", "mes_publicado", "ano_publicado", "anio_publicado",
+        elif cname in ("dia_publicado", "mes_publicado", "ano_publicado", "anio_publicado", "epro_orden", "lada", "celular", "extension",
                        "dia_inicio", "mes_inicio", "ano_inicio", "anio_inicio"):
             formats[i] = '0'
         else:
             if col in df_orig.columns and pd.api.types.is_numeric_dtype(df_orig[col]):
-                formats[i] = '#,##0'
+                # evitar aplicar separador de miles a años
+                if cname not in ("anio_publicado", "ano_publicado", "anio_inicio", "ano_inicio"):
+                    formats[i] = '#,##0'
 
     for r in range(first_data_row, ws.max_row + 1):
         for cidx, fmt in formats.items():
@@ -940,23 +942,47 @@ def ETL_BIMSA(
         if c in df.columns:
             df[c] = pd.to_numeric(df[c], errors="coerce")
 
-    # MAPAS: lat/long + dia/mes/año numéricos
-    if tipo_upper == "MAPAS":
-        def _k(name: str) -> str:
-            return _norm_noaccents_lower(name).replace(" ", "_").replace("__", "_")
-        for col in df.columns:
-            kk = _k(col)
-            if kk in ("latitud", "longitud", "latitude", "longitude", "lat", "lng"):
-                df[col] = pd.to_numeric(df[col], errors="coerce")
-            if kk in (
-                "dia_publicado", "mes_publicado", "año_publicado", "Anio_publicado", "Mes_inicio", "Año_inicio"
-                "dia_inicio", "mes_inicio", "anio_inicio", "Anio_inicio", "Celular", "Extension", "Lada"
-            ):
-                # Convertir a número entero REAL (no string)
-                df[col] = pd.to_numeric(df[col], errors="coerce")
+    # =========================================================
+    # NUMÉRICOS ESPECÍFICOS (APLICAR SIEMPRE)
+    # =========================================================
+    def _k(name: str) -> str:
+        return _norm_noaccents_lower(name).replace(" ", "_").replace("__", "_")
+
+    for col in df.columns:
+        kk = _k(col)
+
+        # Coordenadas (float)
+        if kk in ("latitud", "longitud", "latitude", "longitude", "lat", "lng"):
+            df[col] = pd.to_numeric(df[col], errors="coerce")
+
+        # Día / Mes / Año (enteros) - LIMPIEZA FUERTE
+        elif kk in (
+            "dia_publicado", "mes_publicado", "anio_publicado", "ano_publicado",
+            "dia_inicio", "mes_inicio", "anio_inicio", "ano_inicio"
+        ):
+            # 🔥 LIMPIEZA FUERTE: quitar comas, espacios y forzar número
+            df[col] = (
+                df[col]
+                .astype(str)
+                .str.replace(",", "", regex=False)
+                .str.strip()
+            )
+            df[col] = pd.to_numeric(df[col], errors="coerce").astype("Int64")
+
+        # Teléfono / extensión / lada (enteros)
+        elif kk in ("celular", "extension", "lada", "epro_orden"):
+            df[col] = (
+                df[col]
+                .astype(str)
+                .str.replace(r"[^\d]", "", regex=True)
+                .replace("", None)
+            )
+            df[col] = pd.to_numeric(df[col], errors="coerce")
 
 
     df_export = df.copy()
+    # 🔥 FIX: Excel no soporta <NA>, convertir a None
+    df_export = df_export.where(pd.notnull(df_export), None)
 
     df_export.columns = _export_headers_with_spaces(df_export.columns)
 
@@ -1092,11 +1118,13 @@ def ETL_BIMSA(
             for r in range(first_data_row, ws.max_row + 1):
                 cell = ws.cell(row=r, column=col_idx)
                 try:
-                    val = int(cell.value)
+                    val = str(cell.value).replace(",", "").strip()
+                    val = int(val)
                     cell.value = val
                     cell.number_format = '0'
                 except (TypeError, ValueError):
                     pass
+            continue
 
         # --- DETECCIÓN DE FECHAS ---
         if "fecha" in col_lower or pd.api.types.is_datetime64_any_dtype(col_series):
@@ -1114,10 +1142,13 @@ def ETL_BIMSA(
 
         # --- DETECCIÓN NUMÉRICA GENERAL ---
         elif pd.api.types.is_numeric_dtype(col_series):
+            # evitar formatear años con separador de miles
+            if any(k in col_lower for k in ["anio", "ano"]):
+                continue
             for r in range(first_data_row, ws.max_row + 1):
                 cell = ws.cell(row=r, column=col_idx)
                 if isinstance(cell.value, (int, float)):
-                    cell.number_format = '#,##0'
+                    cell.number_format = '0'
 
         # --- TEXTO LARGO (wrap + left align más elegante) ---
         if any(k in col_lower for k in ["descripcion", "observaciones", "proyecto"]):
