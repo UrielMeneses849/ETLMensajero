@@ -270,10 +270,23 @@ def _repair_all_strings_df(df: pd.DataFrame) -> pd.DataFrame:
 # =========================================================
 
 def _norm_noaccents_lower(s: str) -> str:
-    s = (s or "").strip().lower()
+    # versión ligera sin manejo de acentos
+    return (s or "").strip().lower()
+
+def _remove_accents_text(s: str) -> str:
+    if not isinstance(s, str):
+        return s
+
+    placeholder_lower = "__enie__"
+    placeholder_upper = "__ENIE__"
+
+    s = s.replace("ñ", placeholder_lower).replace("Ñ", placeholder_upper)
+
     s = unicodedata.normalize("NFKD", s)
     s = "".join(ch for ch in s if not unicodedata.combining(ch))
-    s = re.sub(r"\s+", " ", s).strip()
+
+    s = s.replace(placeholder_lower, "ñ").replace(placeholder_upper, "Ñ")
+
     return s
 
 def _strip_wrapping_quotes(s: str) -> str:
@@ -391,9 +404,10 @@ def _smart_text_format(v, col_name: str):
     if not s:
         return None
 
-    k = _norm_noaccents_lower(s)
-    if k in CITY_FIXES:
-        return CITY_FIXES[k]
+    # ACCENTS DISABLED (performance mode)
+    # k = _norm_noaccents_lower(s)
+    # if k in CITY_FIXES:
+    #     return CITY_FIXES[k]
 
     if EMAIL_RE.match(s):
         return s.lower()
@@ -820,8 +834,8 @@ def ETL_BIMSA(
          .replace("anio_", "año_")
     ) if isinstance(c, str) else c)
 
-    # ✅ FIX GLOBAL DE CARACTERES (a TODO texto)
-    df = _repair_all_strings_df(df)
+    # DISABLED mojibake repair (performance mode)
+    # df = _repair_all_strings_df(df)
 
     # Columnas catálogo (no deben procesarse)
     CATALOGO_COLUMNS = {
@@ -979,8 +993,12 @@ def ETL_BIMSA(
             )
             df[col] = pd.to_numeric(df[col], errors="coerce")
 
-
     df_export = df.copy()
+
+    # 🔥 FINAL: remover acentos (rápido y seguro)
+    for col in df_export.select_dtypes(include="object").columns:
+        df_export[col] = df_export[col].map(_remove_accents_text)
+
     # 🔥 FIX: Excel no soporta <NA>, convertir a None
     df_export = df_export.where(pd.notnull(df_export), None)
 
