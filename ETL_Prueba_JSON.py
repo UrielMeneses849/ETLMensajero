@@ -400,6 +400,7 @@ def _smart_text_format(v, col_name: str):
         return v
 
     s = v.strip()
+    s = s.replace("\\", "")
     s = _strip_wrapping_quotes(s)
     if not s:
         return None
@@ -889,7 +890,7 @@ def ETL_BIMSA(
     ALIAS_NOMBRE_PROY = {"nombre_del_proyecto"}
     ALIAS_DESC_PROY   = {"descripcion_del_proyecto"}
     ALIAS_PROYECTO    = {"proyecto", "nombre"}
-    ALIAS_LOCALIZ     = {"localizacion1", "localizacion", "localizacion_del_proyecto"}
+    ALIAS_LOCALIZ     = {"localizacion1", "localizacion", "localizacion_del_proyecto", "del_cd_mun_proyecto"}
     ALIAS_OBSERV      = {"observaciones"}
     ALIAS_DESC_EXTRA  = {"descripcion_extra", "descripcionextra", "descripcion_extra_del_proyecto"}
 
@@ -914,11 +915,11 @@ def ETL_BIMSA(
             continue
 
         if nk2 in (ALIAS_DESC_PROY | ALIAS_PROYECTO):
-            df[col] = df[col].map(lambda x: _normalize_free_text("Proyecto", x, force_upper=False))
+            df[col] = df[col].map(lambda x: _title_case_spanish(x) if isinstance(x, str) else x)
             df[col] = df[col].map(_uppercase_inside_quotes)
 
         elif nk2 in ALIAS_LOCALIZ:
-            df[col] = df[col].map(lambda x: _normalize_free_text("Localizacion1", x, force_upper=False))
+            df[col] = df[col].map(lambda x: _title_case_spanish(x) if isinstance(x, str) else x)
 
         elif nk2 in ALIAS_OBSERV:
             df[col] = df[col].map(lambda x: _normalize_free_text("Observaciones", x, force_upper=False))
@@ -995,9 +996,10 @@ def ETL_BIMSA(
 
     df_export = df.copy()
 
-    # 🔥 FINAL: remover acentos (rápido y seguro)
     for col in df_export.select_dtypes(include="object").columns:
-        df_export[col] = df_export[col].map(_remove_accents_text)
+        df_export[col] = df_export[col].map(
+            lambda x: _unescape_quotes_backslashes(_remove_accents_text(x)) if isinstance(x, str) else x
+        )
 
     # 🔥 FIX: Excel no soporta <NA>, convertir a None
     df_export = df_export.where(pd.notnull(df_export), None)
@@ -1177,6 +1179,41 @@ def ETL_BIMSA(
                     vertical="center",
                     horizontal="left"
                 )
+
+    # =========================================================
+    # 🔥 FIX FINAL (años + moneda) - override total por celda
+    # =========================================================
+
+    for cidx in range(1, ws.max_column + 1):
+        header_name = str(ws.cell(row=header_row, column=cidx).value)
+
+        k = unicodedata.normalize("NFKD", header_name)
+        k = "".join(ch for ch in k if not unicodedata.combining(ch))
+        k = k.lower().replace(" ", "_")
+
+        for r in range(first_data_row, ws.max_row + 1):
+            cell = ws.cell(row=r, column=cidx)
+
+            if cell.value is None:
+                continue
+
+            # 🔥 AÑOS sin separador de miles
+            if k in ("ano_publicado", "anio_publicado", "ano_inicio", "anio_inicio"):
+                try:
+                    cell.value = int(float(str(cell.value).replace(",", "")))
+                except Exception:
+                    pass
+                cell.number_format = '0'
+                continue
+
+            # 🔥 MONEDA con símbolo de pesos
+            if "inversion" in k or "precio" in k or "monto" in k:
+                try:
+                    cell.value = float(str(cell.value).replace(",", ""))
+                except Exception:
+                    pass
+                cell.number_format = '"$"#,##0'
+                continue
 
     # =========================================================
     # Altura de filas
