@@ -859,6 +859,8 @@ def ETL_BIMSA(
         "puesto_2",
         "puesto_3",
         "clave_tipo_obra",
+        "orden_de_gobierno",
+        "tipo_de_institucion",
     }
 
     # Precompute text columns once (avoids repeated dtype scanning)

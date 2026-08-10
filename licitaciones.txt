@@ -1,0 +1,92 @@
+<bobras>
+<datos>
+<id>1</id>
+<clave>C-2026-00060958</clave>
+<codigo_del_expediente>E-2026-00077382</codigo_del_expediente>
+<numero_de_procedimiento>AO-09-643-009000950-N-35-2026</numero_de_procedimiento>
+<codigo_del_contrato>C-2026-00060958</codigo_del_contrato>
+<orden_de_gobierno>APF</orden_de_gobierno>
+<descripcion_del_ramo>Infraestructura, Comunicaciones y Transportes</descripcion_del_ramo>
+<tipo_de_institucion>APF</tipo_de_institucion>
+<institucion_convocante>Infraestructura, Comunicaciones y Transportes</institucion_convocante>
+<nombre_de_la_unidad_compradora>Centro Sict Quintana Roo, Subdirección de Obras</nombre_de_la_unidad_compradora>
+<expediente>Trabajos de Mantenimiento de los Inmuebles Centro Sict Quintana Roo</expediente>
+<descripcion>Trabajos de Mantenimiento de los Inmuebles Centro Sict Quintana Roo Chetumal y Campamento de Huay Pix en el Estado de Quintana Roo</descripcion>
+<fuente_de_la_descripcion>Descripción del Contrato</fuente_de_la_descripcion>
+<tipo_de_procedimiento>Adjudicación Directa Por Montos Máximos Por Excepción</tipo_de_procedimiento>
+<caracter_del_procedimiento>Nacional</caracter_del_procedimiento>
+<articulo_de_excepcion>ART. 43</articulo_de_excepcion>
+<descripcion_de_la_excepcion>Obras Públicas o Servicios Relacionados con las Mismas, Dentro de los Montos Máximos Establecidos en el Pef.</descripcion_de_la_excepcion>
+<partida_especifica>35101</partida_especifica>
+<estatus>Adjudicado</estatus>
+<estatus_original_fuente>(Sin Convocatoria Vinculada en Esta Descarga)</estatus_original_fuente>
+<fecha_de_publicacion>2026-07-01T00:22:55</fecha_de_publicacion>
+<fecha_de_fallo>2026-06-30T00:00:00</fecha_de_fallo>
+<monto_del_contrato_MXN>383004.84</monto_del_contrato_MXN>
+<proveedor_adjudicado>GRUPO CIS HG SA DE CV</proveedor_adjudicado>
+<RFC_del_proveedor>GCH200121E28</RFC_del_proveedor>
+<estratificacion_del_proveedor>Micro</estratificacion_del_proveedor>
+<fecha_de_inicio_del_contrato>2026-07-01</fecha_de_inicio_del_contrato>
+<fecha_de_fin_del_contrato>2026-09-30</fecha_de_fin_del_contrato>
+<fuente_del_registro>FALLO (contrato adjudicado)</fuente_del_registro>
+<direccion_del_anuncio>https://comprasmx.buengobierno.gob.mx/sitiopublico/#/sitiopublico/detalle/542927cbeb9645b29458c9eabd9d5eff/procedimiento</direccion_del_anuncio>
+</datos>
+<datos>
+<id>2</id>
+<clave>C-2026-00060983</clave>
+<codigo_del_expediente>E-2026-00034589</codigo_del_expediente>
+<numero_de_procedimiento>AO-16-B00-016B00004-N-61-2026</numero_de_procedimiento>
+<codigo_del_contrato>C-2026-00060983</codigo_del_contrato>
+<orden_de_gobierno>APF</orden_de_gobierno>
+<descripcion_del_ramo>Medio Ambiente y Recursos Naturales</descripcion_del_ramo>
+<tipo_de_institucion>APF</tipo_de_institucion>
+<institucion_convocante>Comision Nacional del Agua</institucion_convocante>
+<nombre_de_la_unidad_compradora>Organismo de Cuenca Aguas del Valle de Mexico, Direccion de Administracion</nombre_de_la_unidad_compradora>
+<expediente>Construcción del Centro de Visualización (Rehabilitación y Modernización del Cen</expediente>
+<descripcion>Construcción del Centro de Visualización (Rehabilitación y Modernización del Centro de Visualización en la Ptar Atotonilco).</descripcion>
+<fuente_de_la_descripcion>Descripción del Contrato</fuente_de_la_descripcion>
+<tipo_de_procedimiento>Adjudicación Directa Por Licitaciones Públicas Desiertas</tipo_de_procedimiento>
+<caracter_del_procedimiento>Nacional</caracter_del_procedimiento>
+<articulo_de_excepcion>ART. 42 FR. VII</articulo_de_excepcion>
+<descripcion_de_la_excepcion>Se Haya Declarado Desierta Una Licitación Pública, Siempre Que Se Mantengan los Requisitos Establecidos en la Convocatoria.</descripcion_de_la_excepcion>
+<partida_especifica>62602</partida_especifica>
+<estatus>Adjudicado</estatus>
+<estatus_original_fuente>(Sin Convocatoria Vinculada en Esta Descarga)</estatus_original_fuente>
+<fecha_de_publicacion>2026-06-30T18:25:50</fecha_de_publicacion>
+<fecha_de_fallo>2026-05-16T00:00:00</fecha_de_fallo>
+<monto_del_contrato_MXN>16981753.16</monto_del_contrato_MXN>
+<proveedor_adjudicado>SPHERAL BUSINESS GROUP SA DE CV</proveedor_adjudicado>
+<RFC_del_proveedor>SBG151117455</RFC_del_proveedor>
+<estratificacion_del_proveedor>Micro</estratificacion_del_proveedor>
+<fecha_de_inicio_del_contrato>2026-05-16</fecha_de_inicio_del_contrato>
+<fecha_de_fin_del_contrato>2026-12-30</fecha_de_fin_del_contrato>
+<fuente_del_registro>FALLO (contrato adjudicado)</fuente_del_registro>
+<direccion_del_anuncio>https://comprasmx.buengobierno.gob.mx/sitiopublico/#/sitiopublico/detalle/295863e8280c42afb0fe6b3e91e1af78/procedimiento</direccion_del_anuncio>
+</datos>
+<datos>
+<id>3</id>
+<clave>LO-13-J3A-013J3A002-N-30-2026</clave>
+<codigo_del_expediente>E-2026-00077539</codigo_del_expediente>
+<numero_de_procedimiento>LO-13-J3A-013J3A002-N-30-2026</numero_de_procedimiento>
+<orden_de_gobierno>APF</orden_de_gobierno>
+<descripcion_del_ramo>Marina</descripcion_del_ramo>
+<tipo_de_institucion>APF</tipo_de_institucion>
+<institucion_convocante>Administracion del Sistema Portuario Nacional Lazaro Cardenas, S.a. de C.v.</institucion_convocante>
+<nombre_de_la_unidad_compradora>Lazaro Cardenas-gerencia de Ingenieria</nombre_de_la_unidad_compradora>
+<expediente>Construcción de Barda Colindante Paralela Al Brazo Izquierdo</expediente>
+<descripcion>Construcción de Barda Colindante Paralela Al Brazo Izquierdo en Zona Norte de la Isla de la Palma en el Puerto de Lázaro Cárdenas, Mich.</descripcion>
+<fuente_de_la_descripcion>Descripción Anuncio</fuente_de_la_descripcion>
+<tipo_de_procedimiento>Licitación Pública</tipo_de_procedimiento>
+<caracter_del_procedimiento>Nacional</caracter_del_procedimiento>
+<partida_especifica>62601</partida_especifica>
+<entidad_federativa>Michoacán de Ocampo</entidad_federativa>
+<estatus>Vigente</estatus>
+<estatus_original_fuente>Vigente</estatus_original_fuente>
+<fecha_de_publicacion>2026-06-30T17:35:21</fecha_de_publicacion>
+<fecha_de_apertura>2026-07-14T10:00:00</fecha_de_apertura>
+<fecha_y_hora_junta_de_aclaraciones>2026-07-07T12:00:00</fecha_y_hora_junta_de_aclaraciones>
+<fecha_de_fallo>2026-07-23T15:30:00</fecha_de_fallo>
+<fuente_del_registro>CONVOCATORIA (sin fallo aún)</fuente_del_registro>
+<direccion_del_anuncio>https://comprasmx.buengobierno.gob.mx/sitiopublico/#/sitiopublico/detalle/1df11f3e77074d28afec93f367edbe38/procedimiento</direccion_del_anuncio>
+</datos>
+</bobras>
