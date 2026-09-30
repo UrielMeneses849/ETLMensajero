@@ -21,7 +21,6 @@ def main() -> int:
     # Branding (solo CLASICO)
     p.add_argument("--empresa", default="", help="Empresa (solo CLASICO)")
     p.add_argument("--usuario", default="", help="Usuario (solo CLASICO)")
-    p.add_argument("--report-label", default=None, help='Etiqueta esquina (ej: "obra") (solo CLASICO)')
     p.add_argument("--logo-path", default="", help="Ruta al logo_bimsa.png (opcional, ultra robusto)")
 
 
@@ -59,7 +58,6 @@ def main() -> int:
         etl_opts = {
             "empresa": args.empresa,
             "usuario": args.usuario,
-            "report_label": args.report_label,
             "logo_path": args.logo_path or None,
         }
 

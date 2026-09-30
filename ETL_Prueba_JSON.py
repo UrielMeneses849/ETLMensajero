@@ -3,9 +3,11 @@
 import json
 import os
 import sys
+import unicodedata
 from datetime import datetime
 from io import BytesIO
 from typing import Optional
+from urllib.parse import urlsplit
 
 import pandas as pd
 
@@ -46,15 +48,24 @@ def _export_headers_with_spaces(cols):
     Ejemplo:
         orden_de_gobierno
     se muestra como:
-        orden de gobierno
+        Orden de gobierno
 
     Esto NO toca los valores de la data.
     """
 
-    return [
-        str(col).replace("_", " ").strip()
-        for col in cols
-    ]
+    headers = []
+
+    for col in cols:
+
+        header = str(col).replace("_", " ").strip()
+
+        # Solo se cambia la primera letra. El resto se conserva para no
+        # alterar siglas como MXN o RFC.
+        header = header[:1].upper() + header[1:]
+
+        headers.append(header)
+
+    return headers
 
 
 # =========================================================
@@ -108,13 +119,20 @@ def _normalize_column_name_for_style(name: str) -> str:
     if name is None:
         return ""
 
-    return (
-        str(name)
+    normalized = (
+        unicodedata.normalize(
+            "NFKD",
+            str(name)
+        )
+        .encode("ascii", "ignore")
+        .decode("ascii")
         .strip()
         .lower()
         .replace(" ", "_")
         .replace("-", "_")
     )
+
+    return normalized
 
 
 def _apply_width_overrides(
@@ -575,7 +593,6 @@ def _apply_branding_row(
     ncols: int,
     empresa: str,
     usuario: str,
-    report_label: str,
     logo_filename: str = "logo_bimsa.jpg",
     logo_path: Optional[str] = None
 ):
@@ -730,52 +747,6 @@ def _apply_branding_row(
         wrap_text=True
     )
 
-    # =====================================================
-    # TIPO REPORTE
-    # =====================================================
-
-    if ncols >= 2:
-
-        tag_start_col = max(
-            1,
-            ncols - 1
-        )
-
-        # Evitar conflicto con merge B:D
-        if tag_start_col > 4:
-
-            ws.merge_cells(
-                start_row=1,
-                start_column=tag_start_col,
-                end_row=1,
-                end_column=ncols
-            )
-
-            tag_cell = ws.cell(
-                row=1,
-                column=tag_start_col
-            )
-
-            tag_cell.value = report_label
-
-            tag_cell.font = Font(
-                name="Poppins",
-                size=14,
-                bold=True,
-                color="FFFFFF"
-            )
-
-            tag_cell.fill = PatternFill(
-                "solid",
-                COLOR_ORANGE
-            )
-
-            tag_cell.alignment = Alignment(
-                horizontal="right",
-                vertical="center",
-                wrap_text=True
-            )
-
 
 # =========================================================
 # NORMALIZACIÓN DE FECHAS
@@ -786,12 +757,8 @@ def _normalize_date_columns(
 ) -> pd.DataFrame:
 
     """
-    ESTA ES LA ÚNICA TRANSFORMACIÓN DE DATA DEL ETL.
-
     Toda columna cuyo nombre contiene "fecha"
     se transforma a datetime.
-
-    Ninguna otra columna se toca.
     """
 
     for col in df.columns:
@@ -806,6 +773,78 @@ def _normalize_date_columns(
         df[col] = pd.to_datetime(
             df[col],
             errors="coerce"
+        )
+
+    return df
+
+
+# =========================================================
+# NORMALIZACIÓN DE MONEDA
+# =========================================================
+
+def _currency_value_to_number(value):
+
+    """
+    Convierte importes válidos a número para que Excel pueda aplicar
+    formato monetario. Los textos no reconocidos se conservan sin cambios.
+    """
+
+    if value is None or pd.isna(value):
+        return None
+
+    if isinstance(value, bool):
+        return value
+
+    if isinstance(value, (int, float)):
+        return value
+
+    if not isinstance(value, str):
+        return value
+
+    text = value.strip()
+
+    if not text:
+        return None
+
+    is_negative = (
+        text.startswith("(")
+        and text.endswith(")")
+    )
+
+    if is_negative:
+        text = text[1:-1]
+
+    normalized = (
+        text
+        .upper()
+        .replace("MXN", "")
+        .replace("$", "")
+        .replace(",", "")
+        .strip()
+    )
+
+    try:
+        number = float(normalized)
+    except ValueError:
+        return value
+
+    return -number if is_negative else number
+
+
+def _normalize_currency_columns(
+    df: pd.DataFrame
+) -> pd.DataFrame:
+
+    for col in df.columns:
+
+        if (
+            _normalize_column_name_for_style(col)
+            != "monto_del_contrato_mxn"
+        ):
+            continue
+
+        df[col] = df[col].map(
+            _currency_value_to_number
         )
 
     return df
@@ -861,6 +900,91 @@ def _apply_excel_date_format(
 
 
 # =========================================================
+# FORMATO MONETARIO EN EXCEL
+# =========================================================
+
+def _apply_excel_currency_format(
+    ws,
+    original_columns,
+    first_data_row: int
+):
+
+    for col_idx, col_name in enumerate(
+        original_columns,
+        start=1
+    ):
+
+        if (
+            _normalize_column_name_for_style(col_name)
+            != "monto_del_contrato_mxn"
+        ):
+            continue
+
+        for row_idx in range(
+            first_data_row,
+            ws.max_row + 1
+        ):
+
+            ws.cell(
+                row=row_idx,
+                column=col_idx
+            ).number_format = '"$"#,##0.00'
+
+
+# =========================================================
+# HIPERVÍNCULOS EN EXCEL
+# =========================================================
+
+def _apply_excel_hyperlinks(
+    ws,
+    original_columns,
+    first_data_row: int
+):
+
+    for col_idx, col_name in enumerate(
+        original_columns,
+        start=1
+    ):
+
+        if (
+            _normalize_column_name_for_style(col_name)
+            != "direccion_del_anuncio"
+        ):
+            continue
+
+        for row_idx in range(
+            first_data_row,
+            ws.max_row + 1
+        ):
+
+            cell = ws.cell(
+                row=row_idx,
+                column=col_idx
+            )
+
+            if not isinstance(cell.value, str):
+                continue
+
+            url = cell.value.strip()
+            parsed_url = urlsplit(url)
+
+            if (
+                parsed_url.scheme.lower()
+                not in {"http", "https"}
+                or not parsed_url.netloc
+            ):
+                continue
+
+            cell.hyperlink = url
+            cell.font = Font(
+                name="Poppins",
+                size=11,
+                color="0563C1",
+                underline="single"
+            )
+
+
+# =========================================================
 # ETL PRINCIPAL
 # =========================================================
 
@@ -874,7 +998,6 @@ def ETL_BIMSA(
     tipo_fecha: Optional[str] = None,
     fecha_inicio: Optional[str] = None,
     fecha_fin: Optional[str] = None,
-    report_label: Optional[str] = None,
     logo_path: Optional[str] = None,
 ):
 
@@ -898,12 +1021,6 @@ def ETL_BIMSA(
         f"{now.strftime('%Y%m%d_%H%M%S')}"
         f".xlsx"
     )
-
-    if report_label is None:
-
-        report_label = (
-            tipo_upper.lower()
-        )
 
     # =====================================================
     # LEER JSON
@@ -938,10 +1055,14 @@ def ETL_BIMSA(
     )
 
     # =====================================================
-    # ÚNICA TRANSFORMACIÓN PERMITIDA
+    # TRANSFORMACIONES TIPADAS PARA EXCEL
     # =====================================================
 
     df = _normalize_date_columns(
+        df
+    )
+
+    df = _normalize_currency_columns(
         df
     )
 
@@ -1031,20 +1152,8 @@ def ETL_BIMSA(
     #
     # IMPORTANTE:
     #
-    # Aquí NO:
-    #
-    # .upper()
-    # .lower()
-    # .title()
-    # .strip()
-    # float()
-    # int()
-    # pd.to_numeric()
-    #
-    # nada.
-    #
-    # Se escribe exactamente el valor recibido,
-    # excepto las fechas previamente normalizadas.
+    # Se escribe el valor recibido, excepto fechas e importes
+    # previamente normalizados para conservar sus tipos en Excel.
     # =====================================================
 
     data_matrix = (
@@ -1240,7 +1349,6 @@ def ETL_BIMSA(
         ncols=ncols,
         empresa=empresa,
         usuario=usuario,
-        report_label=report_label,
         logo_filename="logo_bimsa.jpg",
         logo_path=logo_path
     )
@@ -1250,6 +1358,18 @@ def ETL_BIMSA(
     # =====================================================
 
     _apply_excel_date_format(
+        ws,
+        original_columns=original_columns,
+        first_data_row=first_data_row
+    )
+
+    _apply_excel_currency_format(
+        ws,
+        original_columns=original_columns,
+        first_data_row=first_data_row
+    )
+
+    _apply_excel_hyperlinks(
         ws,
         original_columns=original_columns,
         first_data_row=first_data_row
